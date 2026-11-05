@@ -44,23 +44,65 @@ class AuthController extends Controller
         ], 201);
     }
 
+    // public function login(LoginRequest $request)
+    // {
+    //     $credentials = $request->validated();
+
+    //     if (!Auth::attempt($credentials)) {
+    //         throw ValidationException::withMessages([
+    //             'email' => ['The provided credentials are incorrect.'],
+    //         ]);
+    //     }
+
+    //     // Prevent session fixation.
+    //     $request->session()->regenerate();
+
+    //     $user = Auth::user()->load([
+    //         'roles',
+    //         'ownerProfile',
+    //     ]);
+
+    //     return response()->json([
+    //         'message' => 'Login successful.',
+    //         'user' => new UserResource($user),
+    //     ]);
+    // }
     public function login(LoginRequest $request)
     {
-        $credentials = $request->validated();
+        $data = $request->validated();
+
+        $field = filter_var($data['login'], FILTER_VALIDATE_EMAIL)
+            ? 'email'
+            : 'phone';
+
+        $credentials = [
+            $field => $data['login'],
+            'password' => $data['password'],
+        ];
 
         if (!Auth::attempt($credentials)) {
             throw ValidationException::withMessages([
-                'email' => ['The provided credentials are incorrect.'],
+                'login' => ['The provided credentials are incorrect.'],
             ]);
         }
 
-        // Prevent session fixation.
+        $user = Auth::user();
+
+        // Reject suspended or deactivated accounts.
+        if ($user->is_suspended || $user->deactivated_at !== null) {
+            Auth::logout();
+
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return response()->json([
+                'message' => 'Your account is currently unavailable.',
+            ], 403);
+        }
+
         $request->session()->regenerate();
 
-        $user = Auth::user()->load([
-            'roles',
-            'ownerProfile',
-        ]);
+        $user->load(['roles', 'ownerProfile']);
 
         return response()->json([
             'message' => 'Login successful.',
