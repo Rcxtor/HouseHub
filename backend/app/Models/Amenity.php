@@ -20,11 +20,13 @@ class Amenity extends Model
         ];
     }
 
-    public function properties(): BelongsToMany
+    public function properties()
     {
         return $this->belongsToMany(
             Property::class,
-            'property_amenities'
+            'property_amenities',
+            'amenity_id',
+            'property_id'
         );
     }
 }

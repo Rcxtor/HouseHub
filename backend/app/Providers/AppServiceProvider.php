@@ -7,6 +7,9 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
+use App\Models\Property;
+use App\Policies\PropertyPolicy;
+use Illuminate\Support\Facades\Gate;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -41,5 +44,6 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(5)
                 ->by('register-ip:' . $request->ip());
         });
+        Gate::policy(Property::class, PropertyPolicy::class);
     }
 }
